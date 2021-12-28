@@ -6,10 +6,12 @@ from flask import Flask, request, jsonify, make_response, send_file
 
 app = Flask(__name__)
 
+
 def read_image(path) -> np.ndarray:
     img = Image.open(path)
     img = np.asarray(img.__array__())
     return img
+
 
 def pad_array(img: np.ndarray, pad: int) -> np.ndarray:
     """3D convolution by sub-matrix summing.
@@ -21,7 +23,8 @@ def pad_array(img: np.ndarray, pad: int) -> np.ndarray:
     """
     if pad == 0:
         return img
-    var_pad = np.zeros(tuple(pad * 2 + np.array(img.shape[:2])) + img.shape[2:])
+    var_pad = np.zeros(
+        tuple(pad * 2 + np.array(img.shape[:2])) + img.shape[2:])
     var_pad[pad, pad] = img
     return var_pad
 
@@ -44,11 +47,10 @@ def convolve(img: np.ndarray, kernel: np.ndarray, pad: int = 0) -> np.ndarray:
         var_pad = img
     for ii in range(ky * kx):
         yi, xi = divmod(ii, kx)
-        slabii = var_pad[yi:2 * pad + ny - ky + yi + 1:1, xi:2 * pad + nx - kx + xi + 1:1, ...] * kernel[yi, xi]
+        slabii = var_pad[yi:2 * pad + ny - ky + yi + 1:1,
+                         xi:2 * pad + nx - kx + xi + 1:1, ...] * kernel[yi, xi]
         result += slabii
     return result
-
-
 
 
 class EdgeDetector:
@@ -68,12 +70,15 @@ class EdgeDetector:
     def gaussian_kernel(self, size: int, sigma: float) -> np.ndarray:
         half_size = int(size) // 2
         x, y = np.mgrid[-half_size:half_size + 1, -half_size:half_size + 1]
-        g = np.exp(-((x ** 2 + y ** 2) / (2.0 * sigma ** 2))) * (1 / (2.0 * np.pi * sigma ** 2))
+        g = np.exp(-((x ** 2 + y ** 2) / (2.0 * sigma ** 2))) * \
+            (1 / (2.0 * np.pi * sigma ** 2))
         return g
 
     def intensity_gradient(self, img: np.ndarray):
-        sobel_filter_x = np.array([[1, 0, -1], [2, 0, -2], [1, 0, -1]], np.float32)
-        sobel_filter_y = np.array([[1, 2, 1], [0, 0, 0], [-1, -2, -1]], np.float32)
+        sobel_filter_x = np.array(
+            [[1, 0, -1], [2, 0, -2], [1, 0, -1]], np.float32)
+        sobel_filter_y = np.array(
+            [[1, 2, 1], [0, 0, 0], [-1, -2, -1]], np.float32)
 
         gx = convolve(img, sobel_filter_x)
         gy = convolve(img, sobel_filter_y)
@@ -150,51 +155,41 @@ class EdgeDetector:
         filtered_image = np.dot(img[..., :3], self.rgb_weights)
 
         # apllying gaussian kernel with shape (5,5)
-        filtered_image = convolve(filtered_image, self.gaussian_kernel(size=self.size, sigma=self.sigma))
+        filtered_image = convolve(filtered_image, self.gaussian_kernel(
+            size=self.size, sigma=self.sigma))
 
         # finding intensity gradient
         filtered_image, theta = self.intensity_gradient(filtered_image)
 
         filtered_image = self.non_max_suppression(filtered_image, theta)
 
-        filtered_image = self.double_treshold(filtered_image, self.low_threshold, self.high_threshold)
+        filtered_image = self.double_treshold(
+            filtered_image, self.low_threshold, self.high_threshold)
 
         return filtered_image
 
     def detect(self) -> np.ndarray:
         return self.edge_detection(self.img)
 
+
 @app.route("/im_size", methods=["POST", "OPTIONS"])
 def process_image():
-    headers = {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': '*',
-        'Access-Control-Allow-Headers': ["POST", "OPTIONS"],
-        'Access-Control-Max-Age': '3600',
-        'Access-Control-Allow-Credentials': 'true'
-    }
     file = request.files['image']
-
 
     img = read_image(file.stream)
     detector = EdgeDetector(img)
     filtered_img = detector.detect()
-
-
 
     fp = io.BytesIO()
     format = Image.registered_extensions()['.jpg']
     Image.fromarray(filtered_img).convert('L').save(fp, format)
 
     resp = make_response(send_file(io.BytesIO(fp.getvalue()),
-                     attachment_filename='asdasd.jpg',
-                     mimetype='image/jpg'))
-    resp.headers = headers
+                                   attachment_filename='asdasd.jpg',
+                                   mimetype='image/jpg'))
+    resp.headers['Access-Control-Allow-Origin'] = '*'
     return resp
-    # return ('', 200, headers)
-
 
 
 if __name__ == '__main__':
     app.run(debug=True)
-
