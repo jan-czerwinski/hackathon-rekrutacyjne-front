@@ -30,7 +30,7 @@ function App() {
     setIsDetectingEdges(true);
 
     const detectEdgesCloudFunctionUrl =
-      'https://europe-central2-optimistic-host-320114.cloudfunctions.net/function-1';
+      'https://europe-central2-optimistic-host-320114.cloudfunctions.net/detect-edges';
 
     if (!inputFileRef.current?.files) return;
     const file = inputFileRef.current.files[0];
@@ -39,7 +39,7 @@ function App() {
     formData.append('image', file);
 
     console.log('fetching.... ');
-    const response = await fetch('http://127.0.0.1:5000/im_size', {
+    const response = await fetch(detectEdgesCloudFunctionUrl, {
       method: 'POST',
       body: formData,
     });
