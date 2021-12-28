@@ -22,7 +22,7 @@ function App() {
     const startTime = performance.now();
 
     const detectEdgesCloudFunctionUrl =
-      'https://europe-central2-optimistic-host-320114.cloudfunctions.net/function-1';
+      'https://europe-central2-optimistic-host-320114.cloudfunctions.net/detect-edges';
 
     if (!inputFileRef.current?.files) return;
     const file = inputFileRef.current.files[0];
