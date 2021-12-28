@@ -1,12 +1,12 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import RingLoader from 'react-spinners/RingLoader';
-import CSS from 'csstype';
 
 function App() {
-  const [inputImgSrc, setInputImgSrc] = useState<string>();
   const [outputImgSrc, setOutputImgSrc] = useState<string>();
-  const [isDetectingEdges, setIsDetectingEdges] = useState(false);
+  const [inputImgSrc, setInputImgSrc] = useState<string>();
   const inputFileRef = useRef<HTMLInputElement>(null);
+
+  const [isDetectingEdges, setIsDetectingEdges] = useState(false);
   const [edgeDetectionTime, setEdgeDetectionTime] = useState(0);
 
   const onInputFileChange = () => {
@@ -35,13 +35,15 @@ function App() {
       body: formData,
     });
 
-    console.log(response);
+    if (!response.ok) {
+      console.error(response);
+      return;
+    }
 
     const responseImgUrl = URL.createObjectURL(await response.blob());
 
-    setIsDetectingEdges(false);
     const endTime = performance.now();
-
+    setIsDetectingEdges(false);
     setEdgeDetectionTime(endTime - startTime);
     setOutputImgSrc(responseImgUrl);
   };
